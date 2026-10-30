@@ -18,6 +18,18 @@ KATHMANDU_MUNICIPALITIES = {
         'lng': 85.324,
         'default_h3_resolution': 8,
         'bounds': {'north': 27.8, 'south': 27.6, 'east': 85.45, 'west': 85.2},
+        'streets': [
+            'New Baneshwor',
+            'Tripureshwor',
+            'Durbarmarg',
+            'Thamel',
+            'Koteshwor',
+            'Bhatbhateni',
+            'Maharajgunj',
+            'Balaju',
+            'Ason',
+            'Gongabu',
+        ],
     },
     'kmc': {
         'id': 'kmc',
@@ -29,6 +41,13 @@ KATHMANDU_MUNICIPALITIES = {
         'lng': 85.33,
         'default_h3_resolution': 8,
         'bounds': {'north': 27.74, 'south': 27.68, 'east': 85.36, 'west': 85.29},
+        'streets': [
+            'Sinamangal',
+            'Chabahil',
+            'Jorpati',
+            'Gairidhara',
+            'Lazimpat',
+        ],
     },
     'kaw': {
         'id': 'kaw',
@@ -40,6 +59,13 @@ KATHMANDU_MUNICIPALITIES = {
         'lng': 85.31,
         'default_h3_resolution': 8,
         'bounds': {'north': 27.75, 'south': 27.68, 'east': 85.34, 'west': 85.28},
+        'streets': [
+            'Maharajgunj',
+            'Sukedhara',
+            'Bishalnagar',
+            'Kalimati',
+            'Samakhushi',
+        ],
     },
 }
 
@@ -54,6 +80,15 @@ LALITPUR_MUNICIPALITIES = {
         'lng': 85.3206,
         'default_h3_resolution': 8,
         'bounds': {'north': 27.7, 'south': 27.6, 'east': 85.38, 'west': 85.28},
+        'streets': [
+            'Satdobato',
+            'Lagankhel',
+            'Lubhu',
+            'Ekantakuna',
+            'Kalimati',
+            'Patan Durbar',
+            'Gwarko',
+        ],
     },
     'tap': {
         'id': 'tap',
@@ -65,6 +100,7 @@ LALITPUR_MUNICIPALITIES = {
         'lng': 85.27,
         'default_h3_resolution': 8,
         'bounds': {'north': 27.69, 'south': 27.65, 'east': 85.30, 'west': 85.25},
+        'streets': ['Thankot Road', 'Godam', 'Pani Pati'],
     },
     'mat': {
         'id': 'mat',
@@ -76,6 +112,7 @@ LALITPUR_MUNICIPALITIES = {
         'lng': 85.37,
         'default_h3_resolution': 8,
         'bounds': {'north': 27.71, 'south': 27.65, 'east': 85.39, 'west': 85.34},
+        'streets': ['Thimi Bazar', 'Madhyapur', 'Bode', 'Nayabazar'],
     },
 }
 
@@ -90,6 +127,13 @@ BHAKTAPUR_MUNICIPALITIES = {
         'lng': 85.429,
         'default_h3_resolution': 8,
         'bounds': {'north': 27.71, 'south': 27.64, 'east': 85.47, 'west': 85.39},
+        'streets': [
+            'Dattatraya Square',
+            'Taumadhi Square',
+            'Siddhi Laxmi',
+            'Bhaktapur Durbar',
+            'Suek',
+        ],
     },
     'sud': {
         'id': 'sud',
@@ -101,6 +145,7 @@ BHAKTAPUR_MUNICIPALITIES = {
         'lng': 85.41,
         'default_h3_resolution': 8,
         'bounds': {'north': 27.67, 'south': 27.62, 'east': 85.44, 'west': 85.39},
+        'streets': ['Suryabinayak Road', 'Madhyapur', 'Balkumari'],
     },
     'cha': {
         'id': 'cha',
@@ -112,6 +157,7 @@ BHAKTAPUR_MUNICIPALITIES = {
         'lng': 85.43,
         'default_h3_resolution': 8,
         'bounds': {'north': 27.75, 'south': 27.70, 'east': 85.47, 'west': 85.41},
+        'streets': ['Changunarayan Temple Road', 'Bageshwori', 'Nala'],
     },
 }
 
@@ -130,6 +176,13 @@ def get_city_by_id(city_id: str | None) -> dict | None:
     if city_id is None:
         return None
     return CITY_SEED.get(city_id)
+
+
+def get_city_streets(city_id: str | None) -> list[str]:
+    city = get_city_by_id(city_id)
+    if city is None:
+        return []
+    return city.get('streets', [])
 
 
 def get_default_city() -> dict:
