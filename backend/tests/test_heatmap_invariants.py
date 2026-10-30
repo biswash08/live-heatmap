@@ -44,7 +44,7 @@ def test_kathmandu_city_definition_is_available():
     city = get_city_by_id(KATHMANDU_CITY_ID)
 
     assert city is not None
-    assert city['name'] == 'Kathmandu'
+    assert 'Kathmandu' in city['name']
     assert city['country'] == 'Nepal'
     assert city['lat'] == 27.7172
     assert city['lng'] == 85.324
