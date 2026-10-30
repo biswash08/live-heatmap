@@ -2,8 +2,14 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+import os
+from dataclasses import dataclass
 from typing import Any
+
+try:
+    import redis
+except ImportError:  # pragma: no cover
+    redis = None
 
 
 @dataclass
@@ -176,3 +182,99 @@ class DriverStateStore:
 
     def get_driver_state(self, driver_id: str) -> DriverState | None:
         return self.driver_states.get(driver_id)
+
+
+class RedisStateStore(DriverStateStore):
+    """Redis-backed mirror for live heatmap state with in-memory fallback."""
+
+    def __init__(self, redis_url: str | None = None, redis_client: Any | None = None) -> None:
+        super().__init__()
+        self.redis_url = redis_url or os.getenv('REDIS_URL', 'redis://127.0.0.1:6379/0')
+        self.redis_client = redis_client
+        self._redis_ready = False
+        if self.redis_client is None:
+            self._redis_ready = self._connect()
+        else:
+            self._redis_ready = True
+
+    def _connect(self) -> bool:
+        if redis is None:
+            return False
+        try:
+            self.redis_client = redis.Redis.from_url(self.redis_url, decode_responses=True)
+            self.redis_client.ping()
+            return True
+        except Exception:
+            self.redis_client = None
+            return False
+
+    def _sync_driver_state(self, state: DriverState) -> None:
+        if not self._redis_ready or self.redis_client is None:
+            return
+        self.redis_client.hset(
+            f'driver:{state.driver_id}',
+            mapping={
+                'driver_id': state.driver_id,
+                'latitude': str(state.latitude),
+                'longitude': str(state.longitude),
+                'current_h3_cell': state.current_h3_cell or '',
+                'city_id': state.city_id or '',
+                'availability_status': state.availability_status,
+                'last_seen': str(state.last_seen),
+                'event_version': str(state.event_version),
+            },
+        )
+        if state.current_h3_cell and state.city_id:
+            self.redis_client.sadd(f'cell:{state.city_id}:{state.current_h3_cell}', state.driver_id)
+            self.redis_client.hset('cell_counts', f'{state.city_id}:{state.current_h3_cell}', str(len(self.cell_members.get(f'cell:{state.city_id}:{state.current_h3_cell}', set()))))
+
+    def apply_location_update(
+        self,
+        driver_id: str,
+        latitude: float,
+        longitude: float,
+        city_id: str,
+        h3_cell: str,
+        event_version: int,
+        timestamp_epoch: float,
+        availability_status: str = 'online',
+    ) -> dict[str, Any]:
+        result = super().apply_location_update(
+            driver_id=driver_id,
+            latitude=latitude,
+            longitude=longitude,
+            city_id=city_id,
+            h3_cell=h3_cell,
+            event_version=event_version,
+            timestamp_epoch=timestamp_epoch,
+            availability_status=availability_status,
+        )
+        state = self.driver_states.get(driver_id)
+        if state is not None:
+            self._sync_driver_state(state)
+        return result
+
+    def mark_driver_inactive(self, driver_id: str) -> dict[str, Any]:
+        result = super().mark_driver_inactive(driver_id)
+        state = self.driver_states.get(driver_id)
+        if state is not None:
+            self._sync_driver_state(state)
+        return result
+
+    def reconcile_cell_counts(self, city_id: str | None = None) -> int:
+        total = super().reconcile_cell_counts(city_id)
+        if self._redis_ready and self.redis_client is not None:
+            for cell_key, members in self.cell_members.items():
+                if city_id is not None and not cell_key.startswith(f'cell:{city_id}:'):
+                    continue
+                self.redis_client.hset('cell_counts', cell_key, str(len(members)))
+        return total
+
+
+def get_state_store() -> DriverStateStore:
+    if os.getenv('USE_REDIS_STATE', 'false').lower() == 'true':
+        try:
+            return RedisStateStore()
+        except Exception:
+            pass
+    return DriverStateStore.shared()
