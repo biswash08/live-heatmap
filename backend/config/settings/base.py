@@ -26,6 +26,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'daphne',
     'rest_framework',
     'rest_framework_simplejwt',
     'drf_spectacular',
@@ -94,13 +95,17 @@ KAFKA_TOPIC_DRIVER_LOCATION = env('KAFKA_TOPIC_DRIVER_LOCATION', default='driver
 KAFKA_DLQ_TOPIC = env('KAFKA_DLQ_TOPIC', default='driver-location-events-dlq')
 KAFKA_CONSUMER_GROUP = env('KAFKA_CONSUMER_GROUP', default='location-processor-v1')
 
+USE_REDIS_CHANNELS = env('USE_REDIS_CHANNELS', default='false').lower() == 'true'
+
 CHANNEL_LAYERS = {
     'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'BACKEND': 'channels.layers.InMemoryChannelLayer' if not USE_REDIS_CHANNELS else 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
             'hosts': [env('CHANNEL_LAYERS_URL', default=REDIS_URL)],
         },
     }
+} if USE_REDIS_CHANNELS else {
+    'default': {'BACKEND': 'channels.layers.InMemoryChannelLayer'}
 }
 
 CACHES = {
