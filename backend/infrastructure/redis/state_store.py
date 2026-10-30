@@ -137,6 +137,40 @@ class DriverStateStore:
         self.driver_states[driver_id] = state
         return {'updated': True, 'driver_id': driver_id, 'previous_h3_cell': previous_cell}
 
+    def expire_stale_drivers(self, now: float, ttl_seconds: int = 30, city_id: str | None = None) -> list[str]:
+        expired: list[str] = []
+        for driver_id, state in list(self.driver_states.items()):
+            if state.availability_status not in {'online', 'available'}:
+                continue
+
+            if now - state.last_seen <= ttl_seconds:
+                continue
+
+            if state.current_h3_cell and state.city_id:
+                self._remove_member(state.city_id, state.current_h3_cell, driver_id)
+
+            state.availability_status = 'offline'
+            state.event_version += 1
+            self.driver_states[driver_id] = state
+            expired.append(driver_id)
+
+        if city_id is not None:
+            self.reconcile_cell_counts(city_id)
+
+        return expired
+
+    def reconcile_cell_counts(self, city_id: str | None = None) -> int:
+        total = 0
+        for cell_key, members in list(self.cell_members.items()):
+            if city_id is not None and not cell_key.startswith(f'cell:{city_id}:'):
+                continue
+
+            count = len(members)
+            self.cell_counts[cell_key] = count
+            total += count
+
+        return total
+
     def get_cell_count(self, city_id: str, h3_cell: str) -> int:
         return self.cell_counts.get(self._cell_key(city_id, h3_cell), 0)
 

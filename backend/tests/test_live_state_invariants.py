@@ -139,3 +139,30 @@ def test_expire_drivers_removes_online_membership_and_marks_inactive():
     assert expired == ['driver-401']
     assert store.get_driver_state('driver-401').availability_status == 'offline'
     assert store.get_cell_count('ktm', cell_id) == 0
+
+
+def test_expire_stale_drivers_uses_last_seen_and_reconciles_cell_counts():
+    store = DriverStateStore()
+    event = {
+        'event_id': 'e-ttl',
+        'driver_id': 'driver-420',
+        'city_id': 'ktm',
+        'latitude': 27.7172,
+        'longitude': 85.324,
+        'timestamp_epoch': 200,
+        'event_version': 9,
+        'availability_status': 'online',
+    }
+    process_location_event(event, store)
+
+    state = store.get_driver_state('driver-420')
+    assert state is not None
+    state.last_seen = 200
+    store.cell_counts = {'cell:ktm:abc': 1}
+
+    expired = store.expire_stale_drivers(now=500, ttl_seconds=60)
+
+    assert expired == ['driver-420']
+    assert state.availability_status == 'offline'
+    assert store.get_cell_count('ktm', state.current_h3_cell or '') == 0
+    assert store.reconcile_cell_counts('ktm') == 0
