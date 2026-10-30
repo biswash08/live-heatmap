@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 
+from apps.cities.seed import KATHMANDU_CITY_ID, get_city_by_id
 from apps.drivers.services import validate_driver_event
 from apps.geospatial.services import get_h3_cell
 from apps.heatmap.services import classify_density
@@ -37,6 +38,16 @@ def test_h3_cell_generation_for_nepal_kathmandu():
 
     assert isinstance(cell, str)
     assert len(cell) > 10
+
+
+def test_kathmandu_city_definition_is_available():
+    city = get_city_by_id(KATHMANDU_CITY_ID)
+
+    assert city is not None
+    assert city['name'] == 'Kathmandu'
+    assert city['country'] == 'Nepal'
+    assert city['lat'] == 27.7172
+    assert city['lng'] == 85.324
 
 
 def test_density_classification_ranges():

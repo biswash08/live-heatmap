@@ -6,6 +6,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
+from apps.cities.seed import get_default_city
 from workers.kafka_producer import DriverLocationProducer
 from .serializers import DriverLocationRequestSerializer, DriverStatusSerializer
 from .services import build_location_acknowledgement, validate_driver_event
@@ -25,7 +26,7 @@ class DriverLocationInboundView(APIView):
         payload = dict(serializer.validated_data)
         payload['driver_id'] = str(request.user.id)
         payload['event_id'] = f'location_event_{uuid4().hex[:12]}'
-        payload['city_id'] = 'ktm'
+        payload['city_id'] = get_default_city()['id']
 
         try:
             producer = DriverLocationProducer(
