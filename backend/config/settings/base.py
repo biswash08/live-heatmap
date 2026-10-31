@@ -25,8 +25,8 @@ INSTALLED_APPS = [
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
-    'django.contrib.staticfiles',
     'daphne',
+    'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
     'drf_spectacular',
@@ -160,3 +160,6 @@ CORS_ALLOWED_ORIGINS = [
 
 H3_RESOLUTION = int(env('H3_RESOLUTION', default='8'))
 DRIVER_LOCATION_TTL_SECONDS = int(env('DRIVER_LOCATION_TTL_SECONDS', default='30'))
+GOOGLE_MAPS_API_KEY = env('GOOGLE_MAPS_API_KEY', default='')
+GOOGLE_MAPS_GEOCODE_ENABLED = env('GOOGLE_MAPS_GEOCODE_ENABLED', default='true').lower() not in {'0', 'false', 'no'}
+GOOGLE_MAPS_TIMEOUT_SECONDS = int(env('GOOGLE_MAPS_TIMEOUT_SECONDS', default='5'))

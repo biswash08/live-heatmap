@@ -2,6 +2,8 @@ from rest_framework.test import APIRequestFactory
 
 from apps.driver_search.views import NearbyDriversView
 from apps.heatmap.views import HeatmapView
+from apps.locations.views import LocationResolveView
+from apps.rides.models import RideRequest
 from apps.surge_pricing.views import SurgePricingView
 from infrastructure.redis.state_store import DriverStateStore
 
@@ -48,3 +50,33 @@ def test_surge_pricing_view_returns_multiplier():
     assert response.status_code == 200
     assert 'surge_multiplier' in response.data
     assert response.data['surge_multiplier'] >= 1.0
+
+
+def test_location_resolve_view_is_public_for_real_address_lookup():
+    request = APIRequestFactory().get('/api/v1/locations/resolve/?latitude=27.7172&longitude=85.324&city_id=ktm')
+    response = LocationResolveView.as_view()(request)
+
+    assert response.status_code == 200
+    assert 'formatted_address' in response.data
+
+
+def test_ride_request_api_persists_booking():
+    payload = {
+        'pickup_address': 'Bajeko Nilo Pul',
+        'pickup_latitude': 27.6758,
+        'pickup_longitude': 85.4316,
+        'destination_address': 'Manau Bakery',
+        'destination_latitude': 27.6722,
+        'destination_longitude': 85.4289,
+        'estimated_fare': 1200,
+        'surge_multiplier': 1.2,
+        'vehicle_type': 'car',
+    }
+
+    request = APIRequestFactory().post('/api/v1/rides/requests/', payload, format='json')
+    from apps.rides.views import RideRequestCreateView
+
+    response = RideRequestCreateView.as_view()(request)
+
+    assert response.status_code == 201
+    assert RideRequest.objects.filter(pickup_address='Bajeko Nilo Pul').exists()
